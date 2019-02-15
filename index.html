@@ -1,11 +1,207 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>tada</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>TADA - Loading...</title>
+<style type="text/css">
+#frameConApp,body,html,#frameConApp > iframe{
+  display:block;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  padding:0;
+  margin:0;
+  z-index: 9999;
+  background:#f7f7f7;
+  overflow:hidden;
+  outline:none;
+  border:none;
+}
+div#frameConApp {
+  display:none;
+  z-index: 99999;
+}
+
+.loadingRoot {
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  padding:0;
+  margin:0;
+  z-index:10;
+  text-align:center;
+  font-family:sans-serif;
+  font-weight:100;
+}
+.spinnerCon {
+  display:inline-block;
+}
+.loadingBody {
+  position: relative;
+  top: 48%;
+}
+
+@-webkit-keyframes fade {
+  from { opacity: 1; }
+  to { opacity: 0.2; }
+}
+@keyframes fade {
+  from { opacity: 1; }
+  to { opacity: 0.2; }
+}
+
+@-webkit-keyframes rotate {
+  from { -webkit-transform: rotate(0deg); }
+  to { -webkit-transform: rotate(360deg); }
+}
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
+
+@-webkit-keyframes slabMove {
+  0% { -webkit-transform: translateY(0) rotateX(30deg); opacity: 0; }
+  10% { -webkit-transform: translateY(-48%); opacity: 1; }
+  90% { -webkit-transform: translateY(-422%); opacity: 0.1; }
+  100% { -webkit-transform: translateY(-480%); opacity: 0; }
+}
+@keyframes slabMove {
+  0% { transform: translateY(0) rotateX(30deg); opacity: 0; }
+  10% { transform: translateY(-48%); opacity: 1; }
+  90% { transform: translateY(-422%); opacity: 0.1; }
+  100% { transform: translateY(-480%); opacity: 0; }
+}
+
+.spinner.slabs {
+  width: 4em;
+  height: 4em;
+  -webkit-transform: perspective(15em) rotateX(65deg) rotateZ(-30deg);
+  transform: perspective(15em) rotateX(65deg) rotateZ(-30deg);
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+}
+
+.spinner.slabs .slab {
+  position: absolute;
+  width: 4em;
+  height: 4em;
+  background: gray;
+  opacity: 0;
+  box-shadow: -0.08em 0.15em 0 rgb(55, 55, 55);
+  -webkit-transform-origin: 50% 0%;
+  transform-origin: 50% 0%;
+  -webkit-animation: slabMove 4s linear infinite;
+  animation: slabMove 4s linear infinite;
+}
+
+.spinner.slabs .slab:nth-child(1) { -webkit-animation-delay: 0s; animation-delay: 0s; }
+.spinner.slabs .slab:nth-child(2) { -webkit-animation-delay: 1s; animation-delay: 1s; }
+.spinner.slabs .slab:nth-child(3) { -webkit-animation-delay: 2s; animation-delay: 2s; }
+.spinner.slabs .slab:nth-child(4) { -webkit-animation-delay: 3s; animation-delay: 3s; }
+
+</style>
 </head>
 <body>
-ta<b>da</b>
+<div id="frameConApp"></div>
+<div class="loadingRoot">
+  <div class="loadingBody">
+    <div class="spinnerCon" id="spinnerCon">
+      <div class="spinner slabs">
+        <div class="slab"></div>
+        <div class="slab"></div>
+        <div class="slab"></div>
+        <div class="slab"></div>
+      </div>
+    </div>
+    <div class="loadingText">Loading dApp...</div>
+  </div>  
+</div>
+<script>
+(function(){
+  var EOS_API = "https://jungle2.cryptolions.io";
+  function postJson(url,data, cb){
+    var x = new XMLHttpRequest();
+    x.open('POST', url);
+    x.onreadystatechange = function() {
+      if (x.readyState === 4 && x.status === 200) {
+        var t = null;
+        try {
+          t= JSON.parse(x.responseText);
+        }catch(e){return cb(e);}
+        cb(null,t);
+      }else if(x.readyState===4){
+        return cb(new Error('Invalid video state'));
+      }
+    };
+    x.send(JSON.stringify(data));
+    return x;
+  }
+  function getAccountABI(account, cb) {
+    return postJson(EOS_API+"/v1/chain/get_abi", {"account_name": account}, cb);
+
+  }
+  function getAccountPageHTML(account, cb) {
+    var obj =  {"json":true,"code":account,"scope":account,"table":"xpdosite","table_key":"","key_type":"i64","lower_bound":null,"upper_bound":null,"index_position":1,"limit":100};
+    return postJson(EOS_API+"/v1/chain/get_table_rows",obj, function(err,rsp){
+      if(err||!rsp||!rsp.rows||!rsp.rows.length||!rsp.rows[0]||typeof rsp.rows[0]!=='object'||typeof rsp.rows[0].raw_html!=='string') {
+        return cb(err||new Error("Missing response"));
+      }
+      cb(null, rsp.rows[0].raw_html);
+    });
+  }
+  function l2a(lst){
+    if(!lst) return [];
+    var arr = [];
+    for(var i=0;i<lst.length;i++) arr[i] = lst[i];
+    return arr;
+  }
+  function showNotCompatible(){
+    alert("This dApp is not compatible with tada.ml!");
+  }
+  function setIFrameBody(htmlSrc) {
+    var iframe = document.createElement('iframe');
+    var iframeCon = document.getElementById('frameConApp');
+    
+    iframeCon.appendChild(iframe);
+
+    iframe.contentWindow.document.open('text/html','replace');
+    iframe.contentWindow.document.write(htmlSrc);
+    iframe.contentWindow.document.close();
+    frameConApp.style.display = "block";
+    var spinnerCon = document.getElementById("spinnerCon");
+    spinnerCon.parentElement.removeChild(spinnerCon);
+  }
+  function init(){
+    var accountName = window.location.hostname.split(".")[0];
+    getAccountABI(accountName, function(errAbi, resAbi){
+      if(errAbi||!resAbi||!resAbi.abi.tables||resAbi.abi.tables.filter(function(o){return o.name==="xpdosite"}).length===0){
+        return showNotCompatible();
+      }
+      getAccountPageHTML(accountName, function(errHtml, resHtml){
+        if(errHtml||typeof resHtml!=='string') {
+          return showNotCompatible();
+        }
+        console.log(resHtml);
+        
+        setIFrameBody(resHtml);
+
+      });
+
+
+
+    })
+  }
+  init();
+  
+})();
+</script>
 </body>
 </html>
